@@ -5,7 +5,7 @@ import time
 
 def search_internshala(keyword: str, max_results: int = 5) -> list[dict]:
     """Search Internshala for internships matching a keyword.
-    Returns a list of dicts with title, company, url, and raw description text."""
+    Returns a list of dicts with title, company, url."""
 
     keyword_slug = keyword.lower().replace(" ", "-")
     search_url = f"https://internshala.com/internships/{keyword_slug}-internship"
@@ -22,26 +22,34 @@ def search_internshala(keyword: str, max_results: int = 5) -> list[dict]:
         return []
 
     soup = BeautifulSoup(response.text, "html.parser")
-    listings = soup.select("div.individual_internship")[:max_results]
+
+    cards = soup.find_all("div", class_=lambda c: c and (
+        "generic_container" in c or "pro_exclusive_container" in c
+    ))
 
     results = []
-    for listing in listings:
-        title_tag = listing.select_one("h3.job-internship-name a")
-        company_tag = listing.select_one("p.company-name")
+    for card in cards[:max_results]:
+        title_tag = card.find(class_="job-internship-name")
+        link_tag = title_tag.find("a") if title_tag else None
 
-        if not title_tag:
+        if not link_tag:
             continue
 
-        title = title_tag.get_text(strip=True)
+        title = link_tag.get_text(strip=True)
+        url = "https://internshala.com" + link_tag.get("href", "")
+
+        company_tag = card.find(class_=lambda c: c and "company" in c.lower())
+        if not company_tag:
+            company_tag = card.find("a", href=lambda h: h and "/company/" in h)
+
         company = company_tag.get_text(strip=True) if company_tag else "Unknown"
-        url = "https://internshala.com" + title_tag.get("href", "")
 
         results.append({
             "title": title,
             "company": company,
             "url": url,
         })
-        time.sleep(1)  # be polite, don't hammer the server
+        time.sleep(1)
 
     return results
 
@@ -58,7 +66,7 @@ def fetch_full_description(url: str) -> str:
         return f"[Could not fetch description: {e}]"
 
     soup = BeautifulSoup(response.text, "html.parser")
-    body = soup.select_one("div.internship_details")
+    body = soup.find(id="internship_details") or soup.find(class_="internship_details")
     if body:
         return body.get_text(separator="\n", strip=True)
     return soup.get_text(separator="\n", strip=True)[:3000]
