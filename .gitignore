@@ -4,3 +4,4 @@ data/jobs.db
 __pycache__/
 output/
 data/master_resume.json
+output/
