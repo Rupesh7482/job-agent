@@ -1,1 +1,18 @@
-llm_model: gemini-3.6-flash
+llm_model: gemini-3.8-flash
+mode: approval
+target_titles:
+  - AI Engineer Intern
+  - ML Engineer Intern
+  - GenAI Intern
+locations: ["Remote", "Chennai", "Bangalore", "Hyderabad"]
+work_mode: ["remote", "hybrid"]
+min_stipend: 0
+experience_level: internship
+match_threshold: 70
+limits:
+  max_per_day: 10
+  max_per_portal: 5
+portals:
+  internshala: { enabled: true }
+  wellfound: { enabled: true }
+  linkedin: { enabled: false }
