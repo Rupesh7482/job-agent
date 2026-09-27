@@ -80,28 +80,31 @@ elif page == "➕ Analyze New Job":
 
     if analyze_clicked:
         if jd_text.strip():
-            with st.spinner("🤔 Analyzing with Gemini..."):
-                result = analyze_jd(jd_text)
-                job_id = insert_job(result, portal="manual", description=jd_text)
+            try:
+                with st.spinner("🤔 Analyzing with Gemini..."):
+                    result = analyze_jd(jd_text)
+                    job_id = insert_job(result, portal="manual", description=jd_text)
 
-            if job_id == -1:
-                st.warning("⚠️ This job is already in the database (duplicate).")
-            else:
-                st.success(f"✅ Saved: **{result['job_title']}** at **{result['company']}**")
-                score = result["match_score"]
-                st.progress(min(score / 100, 1.0), text=f"Match Score: {score}%")
+                if job_id == -1:
+                    st.warning("⚠️ This job is already in the database (duplicate).")
+                else:
+                    st.success(f"✅ Saved: **{result['job_title']}** at **{result['company']}**")
+                    score = result["match_score"]
+                    st.progress(min(score / 100, 1.0), text=f"Match Score: {score}%")
 
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.markdown("**✅ Matched Skills**")
-                    for s in result["matched_skills"]:
-                        st.markdown(f"- {s}")
-                with col2:
-                    st.markdown("**❌ Missing Skills**")
-                    for s in result["missing_skills"]:
-                        st.markdown(f"- {s}")
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.markdown("**✅ Matched Skills**")
+                        for s in result["matched_skills"]:
+                            st.markdown(f"- {s}")
+                    with col2:
+                        st.markdown("**❌ Missing Skills**")
+                        for s in result["missing_skills"]:
+                            st.markdown(f"- {s}")
 
-                st.info(f"💬 {result['note']}")
+                    st.info(f"💬 {result['note']}")
+            except Exception:
+                st.error("⚠️ Gemini is temporarily busy. Please click 'Analyze & Save' again in a few seconds.")
         else:
             st.error("Please paste a job description first.")
 
@@ -128,10 +131,13 @@ elif page == "📋 All Jobs":
                 if job.get("url"):
                     st.markdown(f"[🔗 View original posting]({job['url']})")
 
-                if st.button(f"📄 Generate Tailored Resume", key=f"resume_{job['id']}"):
-                    with st.spinner("Generating PDF..."):
-                        pdf_path = generate_resume_pdf(f"resume_job_{job['id']}")
-                    st.success(f"✅ Saved to `{pdf_path}`")
+                if st.button("📄 Generate Tailored Resume", key=f"resume_{job['id']}"):
+                    try:
+                        with st.spinner("Generating PDF..."):
+                            pdf_path = generate_resume_pdf(f"resume_job_{job['id']}")
+                        st.success(f"✅ Saved to `{pdf_path}`")
+                    except Exception:
+                        st.error("⚠️ Could not generate PDF. Try again.")
     else:
         st.info("No jobs yet — go to **Analyze New Job** to get started.")
 
@@ -144,15 +150,17 @@ elif page == "💬 Ask a Question":
 
     if st.button("Ask", type="primary"):
         if question.strip():
-            with st.spinner("Checking verified facts..."):
-                result = answer_question(question)
+            try:
+                with st.spinner("Checking verified facts..."):
+                    result = answer_question(question)
 
-            if result["needs_user_confirmation"]:
-                st.warning(f"⚠️ **Not found in verified facts.** {result['reason']}")
-                st.caption("Add this to `data/knowledge_base.json` to teach the agent.")
-            else:
-                st.success(f"✅ **Answer:** {result['answer']}")
-                st.caption(result["reason"])
+                if result["needs_user_confirmation"]:
+                    st.warning(f"⚠️ **Not found in verified facts.** {result['reason']}")
+                    st.caption("Add this to `data/knowledge_base.json` to teach the agent.")
+                else:
+                    st.success(f"✅ **Answer:** {result['answer']}")
+                    st.caption(result["reason"])
+            except Exception:
+                st.error("⚠️ Gemini is temporarily busy. Please click 'Ask' again in a few seconds.")
         else:
             st.error("Please type a question first.")
-            
